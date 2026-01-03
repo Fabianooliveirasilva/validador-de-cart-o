@@ -1,0 +1,49 @@
+name: End-to-end smoke tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install uvicorn jq
+      - name: Start FastAPI (uvicorn) in background
+        run: |
+          python -m uvicorn examples.fastapi_app:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1 & echo $! > uvicorn.pid
+      - name: Wait for server to be ready
+        run: |
+          for i in {1..20}; do
+            if curl -sSf http://127.0.0.1:8000/openapi.json >/dev/null 2>&1; then
+              echo "server ready" && break
+            fi
+            sleep 1
+          done
+      - name: Smoke test - valid card
+        run: |
+          curl -s -X POST http://127.0.0.1:8000/detect -H 'Content-Type: application/json' -d '{"number":"4111111111111111","require_luhn":false}' | jq -e '.brand == "Visa" and .luhn_valid == true'
+      - name: Smoke test - invalid luhn
+        run: |
+          curl -s -X POST http://127.0.0.1:8000/detect -H 'Content-Type: application/json' -d '{"number":"411111111111112","require_luhn":true}' | jq -e '.brand == null and .luhn_valid == false'
+      - name: Stop FastAPI
+        if: always()
+        run: |
+          kill "$(cat uvicorn.pid)" || true
+          sleep 1
+      - name: Upload uvicorn log (for debugging)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uvicorn-log
+          path: uvicorn.log

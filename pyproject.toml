@@ -1,0 +1,36 @@
+[project]
+name = "validador-bandeiras"
+version = "0.1.0"
+description = "Detecta a bandeira de cartões de crédito a partir do número do cartão"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{name = "Fabiano"}]
+
+[project.scripts]
+validador-bandeiras = "validador_bandeiras.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.git
+|  \.venv
+|  build
+|  dist
+|  __pycache__
+)/
+'''
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "C", "Q"]
+ignore = ["E203"]
+exclude = ["build", "dist", "__pycache__", ".venv"]

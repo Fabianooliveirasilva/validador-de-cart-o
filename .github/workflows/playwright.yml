@@ -1,0 +1,49 @@
+name: Playwright E2E
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "tests/e2e/**"
+      - "examples/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "tests/e2e/**"
+      - "examples/**"
+
+jobs:
+  e2e:
+    name: Playwright E2E - ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox]
+    env:
+      PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt || true
+          python -m pip install playwright requests pytest
+          python -m playwright install ${{ matrix.browser }}
+      - name: Start uvicorn
+        run: |
+          nohup python -m uvicorn examples.fastapi_app:app --port 8002 > uvicorn.log 2>&1 &
+          sleep 2
+      - name: Run pytest e2e
+        run: |
+          pytest tests/e2e/test_web_ui.py -q || (echo "=== uvicorn.log ===" && tail -n 200 uvicorn.log && false)
+      - name: Upload E2E artifacts on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-artifacts-${{ matrix.browser }}
+          path: tests/e2e/artifacts/**
+          if-no-files-found: warn

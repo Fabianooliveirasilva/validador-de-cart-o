@@ -1,0 +1,23 @@
+name-template: "v$NEXT_PATCH_VERSION - $BRANCH"
+tag-template: "v$NEXT_PATCH_VERSION"
+
+categories:
+  - title: "🚀 Features"
+    label: "feature"
+  - title: "🐛 Fixes"
+    label: "bug"
+  - title: "🧰 Maintenance"
+    label: "maintenance"
+  - title: "📚 Documentation"
+    label: "documentation"
+  - title: "🧪 Tests"
+    label: "tests"
+
+change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  _This release draft was generated automatically by Release Drafter._
